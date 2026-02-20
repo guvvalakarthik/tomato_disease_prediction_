@@ -1,0 +1,78 @@
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(135deg, #f8f9fa, #e9f5ec);
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 30px;
+  color: #2d6a4f;
+}
+
+.card {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+}
+
+.image-preview {
+  width: 100%;
+  max-width: 350px;
+  margin: 20px 0;
+  border-radius: 12px;
+}
+
+.button {
+  background-color: #40916c;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.button:hover {
+  background-color: #2d6a4f;
+}
+
+.result {
+  margin-top: 20px;
+}
+
+.disease {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1b4332;
+}
+
+.confidence {
+  font-size: 18px;
+  margin-top: 10px;
+  color: #344e41;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .card {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+}

@@ -1,0 +1,14 @@
+# Python
+venv/
+api/venv/
+__pycache__/
+*.pyc
+
+# React
+frontend/node_modules/
+
+# IDE
+.idea/
+
+# OS
+.DS_Store
