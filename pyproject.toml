@@ -45,6 +45,9 @@ include = ["api*"]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
 
+[tool.vercel]
+entrypoint = "api.main:app"
+
 [tool.coverage.run]
 source = ["api"]
 branch = true
