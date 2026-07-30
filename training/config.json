@@ -1,0 +1,23 @@
+{
+  "seed": 42,
+  "image_size": [224, 224],
+  "batch_size": 32,
+  "epochs_frozen": 8,
+  "epochs_finetune": 20,
+  "learning_rate_frozen": 0.001,
+  "learning_rate_finetune": 0.00005,
+  "early_stopping_patience": 5,
+  "model_version": "1.0.0",
+  "classes": [
+    {"id": "tomato_bacterial_spot", "label": "Bacterial Spot"},
+    {"id": "tomato_early_blight", "label": "Early Blight"},
+    {"id": "tomato_late_blight", "label": "Late Blight"},
+    {"id": "tomato_leaf_mold", "label": "Leaf Mold"},
+    {"id": "tomato_septoria_leaf_spot", "label": "Septoria Leaf Spot"},
+    {"id": "tomato_spider_mites", "label": "Spider Mites"},
+    {"id": "tomato_target_spot", "label": "Target Spot"},
+    {"id": "tomato_yellow_leaf_curl_virus", "label": "Yellow Leaf Curl Virus"},
+    {"id": "tomato_mosaic_virus", "label": "Mosaic Virus"},
+    {"id": "tomato_healthy", "label": "Healthy"}
+  ]
+}

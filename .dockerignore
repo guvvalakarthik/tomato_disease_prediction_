@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+**/__pycache__
+**/.pytest_cache
+**/node_modules
+frontend/dist
+frontend/coverage
+data
+artifacts
+reports/generated
+training/training.ipynb
+model/1
+model/2
+model/3
+*.md

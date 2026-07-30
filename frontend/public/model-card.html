@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TomatoGuard model card</title>
+    <style>body{font:16px/1.6 system-ui;max-width:760px;margin:48px auto;padding:0 20px;color:#1e293b}h1,h2{color:#064e3b}.status{padding:16px;border:1px solid #f59e0b;background:#fffbeb;border-radius:12px}a{color:#047857}</style>
+  </head>
+  <body>
+    <p><a href="/">? Back to TomatoGuard</a></p>
+    <h1>Model card</h1>
+    <p class="status"><strong>Status: validation pending.</strong> The live compatibility model is legacy release 0.1.0 and is not field-ready or calibrated.</p>
+    <h2>Intended use</h2>
+    <p>Educational screening of a clear photograph containing one tomato leaf across nine disease or pest classes and healthy. It is not a definitive diagnosis or treatment prescription.</p>
+    <h2>Release design</h2>
+    <p>The planned validated release uses MobileNetV3-Small, leaf-group-aware splits, temperature scaling, OOD rejection, ONNX CPU inference, and class-activation maps.</p>
+    <h2>Required evidence</h2>
+    <p>Per-class clean metrics, confusion matrices, calibration, locked OOD rejection, expert-reviewed local field evaluation, artifact parity, CPU latency, and user-study findings must be published before field-ready wording is used.</p>
+    <h2>Limitations</h2>
+    <p>Controlled-background data can inflate accuracy. Similar symptoms have different causes. Unsupported crops, novel conditions, multiple diseases, early symptoms, blur, lighting, and occlusion can produce errors or uncertain results.</p>
+  </body>
+</html>
