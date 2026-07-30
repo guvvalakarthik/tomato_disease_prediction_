@@ -23,7 +23,7 @@ not a validated model release:
 python scripts/export_legacy_onnx.py
 vercel deploy --prod --project tomatoguard-api \
   -e TOMATOGUARD_MODEL_PATH=model/tomatoes.onnx \
-  -e TOMATOGUARD_ALLOWED_ORIGINS=https://tomatoguard.vercel.app \
+  -e TOMATOGUARD_ALLOWED_ORIGINS=https://tomatoguard-lake.vercel.app \
   -e TOMATOGUARD_FEEDBACK_DB_PATH=/tmp/tomatoguard-feedback.sqlite3 \
   -e TOMATOGUARD_MAX_UPLOAD_BYTES=4000000
 vercel deploy frontend --prod --project tomatoguard \

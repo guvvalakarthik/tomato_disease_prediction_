@@ -11,6 +11,10 @@ and a React interface that can decline to diagnose an image.
 > accuracy using a flawed batch-level split. It is retained for compatibility,
 > not presented as field-ready evidence. See [release gates](docs/RELEASE_GATES.md).
 
+**Live portfolio deployment:** [TomatoGuard web app](https://tomatoguard-lake.vercel.app)
+and [FastAPI documentation](https://tomatoguard-api.vercel.app/docs). The live app
+serves the explicitly unvalidated `0.1.0-legacy` compatibility model.
+
 ## Why this is not a generic classifier demo
 
 - Leaf-group-aware, deterministic manifests prevent duplicate leakage.
