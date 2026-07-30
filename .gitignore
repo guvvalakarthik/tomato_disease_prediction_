@@ -13,6 +13,7 @@ data/raw/
 data/processed/
 artifacts/
 reports/generated/
+model/releases/
 *.keras
 *.onnx
 *.npy
