@@ -29,6 +29,30 @@ docker run --rm -p 8000:8000 \
 
 Both `/health/live` and `/health/ready` must pass before deployment.
 
+## Automated production promotion
+
+`.github/workflows/deploy.yml` is a manual, protected production workflow. It:
+
+1. downloads `tomatoguard-model.zip` from the selected GitHub release;
+2. reruns every model evidence gate;
+3. publishes versioned and `latest` ONNX API images to GHCR for `linux/amd64`;
+4. triggers an image-backed Render service with the exact model version;
+5. builds and tests the frontend against the production API;
+6. deploys the static bundle to Cloudflare Pages; and
+7. waits for public liveness, readiness, model identity, frontend identity, and exact
+   CORS checks to pass.
+
+Configure the GitHub `production` environment with required reviewers and these values:
+
+- secret `RENDER_DEPLOY_HOOK_URL` for an image-backed Render service;
+- secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`;
+- variable `CLOUDFLARE_PAGES_PROJECT`;
+- a Render registry credential if the GHCR package is private.
+
+The GitHub release archive must contain the five validated files at its root. Keep
+automatic provider deploys disabled so only this evidence-gated workflow can promote
+production. Never place hook URLs or API tokens in repository files.
+
 ## Render API
 
 `render.yaml` describes the current compatibility service. Connect the repository in
