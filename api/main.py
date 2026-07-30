@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 
 from .config import Settings
 from .errors import APIError
-from .feedback import FeedbackStore
+from .feedback import create_feedback_store
 from .images import (
     decode_image,
     pre_model_rejection_reason,
@@ -47,7 +47,11 @@ def create_app(
             format="%(asctime)s %(levelname)s %(name)s %(message)s",
         )
         app.state.model_error = None
-        app.state.feedback_store = FeedbackStore(config.feedback_db_path)
+        app.state.feedback_store = create_feedback_store(
+            config.feedback_database_url,
+            config.feedback_db_path,
+            config.require_durable_feedback,
+        )
         if runtime is not None:
             app.state.runtime = runtime
         else:

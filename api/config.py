@@ -22,6 +22,8 @@ class Settings:
     max_image_pixels: int
     log_level: str
     feedback_db_path: Path = PROJECT_ROOT / "data/feedback.sqlite3"
+    feedback_database_url: str | None = None
+    require_durable_feedback: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -48,4 +50,9 @@ class Settings:
             feedback_db_path=_project_path(
                 os.getenv("TOMATOGUARD_FEEDBACK_DB_PATH", "data/feedback.sqlite3")
             ),
+            feedback_database_url=os.getenv("TOMATOGUARD_FEEDBACK_DATABASE_URL") or None,
+            require_durable_feedback=os.getenv(
+                "TOMATOGUARD_REQUIRE_DURABLE_FEEDBACK", "false"
+            ).lower()
+            in {"1", "true", "yes"},
         )
