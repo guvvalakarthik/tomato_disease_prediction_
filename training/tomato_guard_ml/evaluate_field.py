@@ -34,6 +34,7 @@ def bootstrap_macro_f1(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate the locked expert-reviewed field set")
     parser.add_argument("--model", type=Path, required=True)
+    parser.add_argument("--reviews", type=Path, required=True)
     parser.add_argument("--metadata", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--field-root", type=Path, required=True)
@@ -54,6 +55,7 @@ def main() -> None:
         args.manifest,
         args.field_root,
         class_ids,
+        review_ledger=args.reviews,
     )
     represented = sorted(set(frame["class_id"]))
     missing = sorted(set(class_ids) - set(represented))

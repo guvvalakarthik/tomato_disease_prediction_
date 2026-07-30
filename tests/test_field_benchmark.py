@@ -29,6 +29,9 @@ def _manifest(tmp_path: Path, samples_per_class: int = 30) -> Path:
                     "consent_recorded": "true",
                     "capture_date": "2026-07-01",
                     "device_family": "Android phone",
+                    "consent_receipt_sha256": hashlib.sha256(
+                        f"consent-{sample_id}".encode()
+                    ).hexdigest(),
                     "lighting": "natural shade",
                     "background": "field",
                     "location_bucket": "region-01",
@@ -45,15 +48,43 @@ def _mutate(path: Path, column: str, value: str, row: int = 0) -> None:
     frame.loc[row, column] = value
     frame.to_csv(path, index=False)
 
+def _reviews(tmp_path: Path, manifest: Path) -> Path:
+
+    rows = []
+    frame = pd.read_csv(manifest, dtype=str)
+    for row in frame.itertuples(index=False):
+        for reviewer_index in range(2):
+            rows.append(
+                {
+                    "sample_id": row.sample_id,
+                    "reviewer_id": f"reviewer-{reviewer_index}",
+                    "expert_role": "plant_pathologist",
+                    "proposed_class_id": row.class_id,
+                    "review_outcome": "independent",
+                    "reviewed_at": "2026-07-15T10:00:00Z",
+                }
+            )
+    path = tmp_path / "field-reviews.csv"
+    pd.DataFrame(rows).to_csv(path, index=False)
+    return path
+
+
+def _validate(path: Path, tmp_path: Path, **kwargs):
+    return validate_field_benchmark(
+        path, class_ids=list(CLASS_IDS), review_ledger=_reviews(tmp_path, path), **kwargs
+    )
+
 
 def test_valid_field_benchmark_produces_lock_summary(tmp_path: Path) -> None:
     path = _manifest(tmp_path)
-    frame, summary = validate_field_benchmark(path, class_ids=list(CLASS_IDS))
+    frame, summary = _validate(path, tmp_path)
     assert len(frame) == 300
     assert summary["sample_count"] == 300
     assert summary["dataset_version"] == "1.0.0"
     assert summary["minimum_independent_reviews"] == 2
     assert summary["field_data_used_for_training"] is False
+    assert summary["review_record_count"] == 600
+    assert summary["review_ledger_sha256"]
 
 
 def test_rejects_under_sized_field_benchmark(tmp_path: Path) -> None:
@@ -92,6 +123,71 @@ def test_rejects_path_traversal(tmp_path: Path) -> None:
         validate_field_benchmark(path, class_ids=list(CLASS_IDS))
 
 
+
+def test_requires_normalized_review_ledger(tmp_path: Path) -> None:
+    path = _manifest(tmp_path)
+    with pytest.raises(ValueError, match="normalized expert review ledger"):
+        validate_field_benchmark(path, class_ids=list(CLASS_IDS))
+
+
+def test_rejects_invalid_consent_receipt_hash(tmp_path: Path) -> None:
+    path = _manifest(tmp_path)
+    _mutate(path, "consent_receipt_sha256", "not-a-hash")
+    with pytest.raises(ValueError, match="consent receipt SHA-256"):
+        _validate(path, tmp_path)
+
+
+def test_rejects_claimed_reviews_not_proven_by_ledger(tmp_path: Path) -> None:
+    path = _manifest(tmp_path)
+    reviews = _reviews(tmp_path, path)
+    frame = pd.read_csv(reviews, dtype=str)
+    first_sample = frame.iloc[0]["sample_id"]
+    frame = frame[
+        ~((frame["sample_id"] == first_sample) & (frame["reviewer_id"] == "reviewer-1"))
+    ]
+    frame.to_csv(reviews, index=False)
+    with pytest.raises(ValueError, match="independent reviews"):
+        validate_field_benchmark(path, class_ids=list(CLASS_IDS), review_ledger=reviews)
+
+
+def test_rejects_false_agreement(tmp_path: Path) -> None:
+    path = _manifest(tmp_path)
+    reviews = _reviews(tmp_path, path)
+    frame = pd.read_csv(reviews, dtype=str)
+    frame.loc[0, "proposed_class_id"] = CLASS_IDS[1]
+    frame.to_csv(reviews, index=False)
+    with pytest.raises(ValueError, match="does not have unanimous labels"):
+        validate_field_benchmark(path, class_ids=list(CLASS_IDS), review_ledger=reviews)
+
+
+
+def test_accepts_evidenced_adjudication(tmp_path: Path) -> None:
+    path = _manifest(tmp_path)
+    manifest = pd.read_csv(path, dtype=str)
+    sample_id = manifest.iloc[0]["sample_id"]
+    final_label = manifest.iloc[0]["class_id"]
+    manifest.loc[0, "adjudication_status"] = "adjudicated"
+    manifest.to_csv(path, index=False)
+
+    reviews = _reviews(tmp_path, path)
+    frame = pd.read_csv(reviews, dtype=str)
+    sample_rows = frame.index[frame["sample_id"] == sample_id].tolist()
+    frame.loc[sample_rows[0], "proposed_class_id"] = CLASS_IDS[1]
+    frame.loc[sample_rows[1], "proposed_class_id"] = final_label
+    frame.loc[len(frame)] = {
+        "sample_id": sample_id,
+        "reviewer_id": "adjudicator-1",
+        "expert_role": "plant_pathologist",
+        "proposed_class_id": final_label,
+        "review_outcome": "adjudicator_decision",
+        "reviewed_at": "2026-07-16T10:00:00Z",
+    }
+    frame.to_csv(reviews, index=False)
+
+    _, summary = validate_field_benchmark(
+        path, class_ids=list(CLASS_IDS), review_ledger=reviews
+    )
+    assert summary["review_record_count"] == 601
 def test_verifies_image_checksum_when_root_is_provided(tmp_path: Path) -> None:
     path = _manifest(tmp_path)
     frame = pd.read_csv(path, dtype=str)
@@ -104,7 +200,9 @@ def test_verifies_image_checksum_when_root_is_provided(tmp_path: Path) -> None:
             row.sample_id.encode()
         ).hexdigest()
     frame.to_csv(path, index=False)
-    validate_field_benchmark(path, field_root, list(CLASS_IDS))
+    validate_field_benchmark(
+        path, field_root, list(CLASS_IDS), review_ledger=_reviews(tmp_path, path)
+    )
     first = field_root / frame.iloc[0]["relative_path"]
     first.write_bytes(b"tampered")
     with pytest.raises(ValueError, match="checksum mismatch"):

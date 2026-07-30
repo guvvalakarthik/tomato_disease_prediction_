@@ -8,7 +8,8 @@ training, hyperparameter selection, calibration, or rejection thresholds.
 ## Before collection
 
 1. Freeze collection consent, privacy, labeling, and withdrawal procedures.
-2. Recruit a qualified expert reviewer and assign an anonymous reviewer ID.
+2. Recruit at least two qualified independent reviewers, assign anonymous reviewer
+   IDs, and identify a separate adjudicator for disagreements.
 3. Freeze model weights, class order, temperature, threshold, and clean-test report.
 4. Register the desired sample count, class coverage, and analysis in the run record.
 
@@ -23,10 +24,16 @@ training, hyperparameter selection, calibration, or rejection thresholds.
 
 ## Review
 
-The expert reviews full-resolution originals without seeing model predictions. Each
-sample becomes `confirmed`, `unresolved`, `unsupported`, or `excluded-quality`.
-Disagreements are adjudicated by a second reviewer when available. Only confirmed
+Experts review full-resolution originals independently without seeing model predictions
+or each other's labels. Each sample becomes `confirmed`, `unresolved`, `unsupported`,
+or `excluded-quality`. Store one final decision per reviewer and sample in the
+normalized review ledger; do not treat a reviewer-count field as proof. Agreed samples
+must have at least two unanimous independent labels. Disagreements require a distinct
+adjudicator decision, and the manifest label must match it. Only confirmed
 supported-class images enter class metrics.
+
+Keep consent receipts private. Record only their SHA-256 values in the manifest so the
+locked evidence can prove receipt continuity without exposing personal information.
 
 ## Locked analysis
 
