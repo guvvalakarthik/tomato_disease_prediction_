@@ -7,12 +7,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from .config import Settings
 from .errors import APIError
 from .images import decode_image, read_upload, to_model_array
 from .inference import ModelRuntime
+from .metrics import MetricsRegistry
 from .schemas import (
     ClassProbability,
     ErrorBody,
@@ -59,6 +60,7 @@ def create_app(
         lifespan=lifespan,
     )
     app.state.settings = config
+    app.state.metrics = MetricsRegistry()
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(config.allowed_origins),
@@ -81,6 +83,12 @@ def create_app(
             response.status_code,
             (time.perf_counter() - started) * 1000,
             request_id,
+        )
+        route = request.scope.get("route")
+        route_path = getattr(route, "path", "unmatched")
+        app.state.metrics.observe_request(
+            request.method, route_path, response.status_code,
+            (time.perf_counter() - started) * 1000,
         )
         return response
 
@@ -113,6 +121,14 @@ def create_app(
             model_version=loaded.metadata.version,
             model_sha256=loaded.sha256,
             class_count=len(loaded.metadata.classes),
+        )
+
+
+    @app.get("/metrics", include_in_schema=False)
+    async def metrics(request: Request) -> PlainTextResponse:
+        return PlainTextResponse(
+            request.app.state.metrics.render_prometheus(),
+            media_type="text/plain; version=0.0.4; charset=utf-8",
         )
 
     @app.post("/v1/predict", response_model=PredictionResponse)
@@ -150,6 +166,10 @@ def create_app(
             Explanation(method="class_activation_map", png_base64=heatmap)
             if heatmap
             else None
+        )
+        request.app.state.metrics.observe_prediction(
+            "predicted" if accepted else "uncertain",
+            top[0].class_id,
         )
         return PredictionResponse(
             request_id=request.state.request_id,
