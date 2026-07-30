@@ -5,6 +5,8 @@
 - Backend tests pass with at least 80% branch-aware coverage.
 - Frontend component tests, production build, and high-severity dependency audit pass.
 - Docker Compose validates; containers run as non-root where supported.
+- Flat/synthetic, extreme-exposure, and monochrome inputs return `uncertain` before
+  inference; their model probabilities are never exposed.
 - Upload validation covers wrong MIME, corrupt, empty, oversized, grayscale, and RGBA.
 - TensorFlow and ONNX probabilities meet declared parity tolerance on a fixed sample.
 - Artifact checksums, class order, input shape, outputs, and CAM weights validate.
@@ -45,9 +47,10 @@
 | Hardened API and schema | Implemented | Automated API tests |
 | Frontend uncertainty flow | Implemented | Component tests and production build |
 | Reproducible ML commands | Implemented | Manifest/train/evaluate/export modules |
+| Obvious input-quality rejection | Implemented | API and image-quality regression tests |
 | Validated ONNX release | Pending | `model/release/` intentionally has no artifact |
 | Clean release metrics | Pending | Requires dataset and GPU run |
-| OOD evaluation | Pending | Requires curated calibration and locked sets |
+| Semantic OOD evaluation | Pending | Requires curated calibration and locked sets |
 | Expert field evaluation | Pending | Requires consented collection and review |
 | Public deployment | Pending | Requires validated artifact and account connection |
 | User study | Pending | Requires deployed validated demo |

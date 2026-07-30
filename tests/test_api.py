@@ -34,8 +34,10 @@ class DummyRuntime:
         self.probabilities = np.asarray(probabilities)
         self.heatmap = heatmap
         self.last_shape = None
+        self.calls = 0
 
     def predict(self, batch, include_explanation=False):
+        self.calls += 1
         self.last_shape = batch.shape
         return self.probabilities, self.heatmap if include_explanation else None
 
@@ -54,8 +56,24 @@ def settings(tmp_path: Path) -> Settings:
 
 
 def image_bytes(mode="RGB", image_format="PNG") -> bytes:
-    color = 128 if mode == "L" else (30, 120, 40, 180) if mode == "RGBA" else (30, 120, 40)
+    color = (
+        128
+        if mode == "L"
+        else (30, 120, 40, 180)
+        if mode == "RGBA"
+        else (30, 120, 40)
+    )
     image = Image.new(mode, (40, 20), color=color)
+    if mode == "L":
+        accent = 70
+    elif mode == "RGBA":
+        accent = (80, 175, 70, 180)
+    else:
+        accent = (80, 175, 70)
+    for x in range(0, 40, 8):
+        for stripe_x in range(x, min(x + 4, 40)):
+            for y in range(20):
+                image.putpixel((stripe_x, y), accent)
     buffer = io.BytesIO()
     image.save(buffer, format=image_format)
     return buffer.getvalue()
@@ -101,14 +119,54 @@ def test_low_confidence_is_uncertain(settings):
     assert response.json()["prediction"] is None
     assert len(response.json()["top_predictions"]) == 3
 
+@pytest.mark.parametrize(
+    ("color", "expected_text"),
+    [
+        ((30, 120, 40), "too little visual detail"),
+        ((255, 255, 255), "too bright"),
+        ((0, 0, 0), "too dark"),
+    ],
+)
+def test_obvious_ood_inputs_are_uncertain_without_model_call(
+    settings, color, expected_text
+):
+    runtime = DummyRuntime([1.0] + [0.0] * 9)
+    image = Image.new("RGB", (64, 64), color=color)
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    with TestClient(create_app(settings, runtime)) as client:
+        response = client.post(
+            "/v1/predict",
+            files={"file": ("ood.png", buffer.getvalue(), "image/png")},
+        )
+    body = response.json()
+    assert response.status_code == 200
+    assert body["status"] == "uncertain"
+    assert body["prediction"] is None
+    assert body["top_predictions"] == []
+    assert expected_text in body["uncertainty_reason"]
+    assert runtime.calls == 0
 
-@pytest.mark.parametrize("mode", ["L", "RGBA"])
-def test_grayscale_and_rgba_are_normalized_to_rgb(settings, mode):
+
+def test_grayscale_is_uncertain_without_model_call(settings):
     runtime = DummyRuntime([1.0] + [0.0] * 9)
     with TestClient(create_app(settings, runtime)) as client:
         response = client.post(
             "/v1/predict",
-            files={"file": ("leaf.png", image_bytes(mode=mode), "image/png")},
+            files={"file": ("leaf.png", image_bytes(mode="L"), "image/png")},
+        )
+    assert response.status_code == 200
+    assert response.json()["status"] == "uncertain"
+    assert "color information" in response.json()["uncertainty_reason"]
+    assert runtime.calls == 0
+
+
+def test_rgba_is_normalized_to_rgb(settings):
+    runtime = DummyRuntime([1.0] + [0.0] * 9)
+    with TestClient(create_app(settings, runtime)) as client:
+        response = client.post(
+            "/v1/predict",
+            files={"file": ("leaf.png", image_bytes(mode="RGBA"), "image/png")},
         )
     assert response.status_code == 200
     assert runtime.last_shape[-1] == 3
