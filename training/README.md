@@ -20,6 +20,16 @@ From the repository root:
 ```bash
 python -m pip install -r training/requirements.txt
 python -m training.tomato_guard_ml.manifest --help
+
+Install export dependencies after the training environment. TensorFlow 2.20 requires
+modern protobuf while tf2onnx 1.16 declares an older protobuf range, so the converter
+is intentionally installed without replacing TensorFlow's working dependency set:
+
+```bash
+python -m pip install -r training/requirements-export.txt
+python -m pip install --no-deps tf2onnx==1.16.1
+```
+
 python -m training.tomato_guard_ml.train --help
 python -m training.tomato_guard_ml.evaluate --help
 ```
