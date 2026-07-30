@@ -150,6 +150,13 @@ python -m training.tomato_guard_ml.evaluate_field \
 7. Export and validate the release bundle. Validation refuses artifacts that do
    not meet the declared clean, OOD, calibration, and field gates:
 
+Install the converter without allowing its legacy protobuf declaration to replace
+TensorFlow 2.20's runtime dependency:
+
+```bash
+python -m pip install -r training/requirements-export.txt
+python -m pip install --no-deps tf2onnx==1.16.1
+```
 ```bash
 python -m training.tomato_guard_ml.export_onnx \
   --model artifacts/mobilenetv3-seed-42/model.keras \

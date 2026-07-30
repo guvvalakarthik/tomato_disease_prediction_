@@ -23,7 +23,11 @@ def main() -> None:
     weights_path = args.release / "classifier_weights.npy"
     metrics_path = args.release / "metrics.json"
     field_metrics_path = args.release / "field_metrics.json"
-    required = (model_path, metadata_path, weights_path, metrics_path, field_metrics_path)
+    export_validation_path = args.release / "export_validation.json"
+    required = (
+        model_path, metadata_path, weights_path, metrics_path,
+        field_metrics_path, export_validation_path,
+    )
     missing = [path.name for path in required if not path.is_file()]
     if missing:
         raise SystemExit(f"Missing release files: {missing}")
@@ -37,6 +41,15 @@ def main() -> None:
         raise SystemExit("metrics.json checksum does not match metadata.json")
     if metadata.get("field_metrics_sha256") != sha256(field_metrics_path):
         raise SystemExit("field_metrics.json checksum does not match metadata.json")
+    if metadata.get("export_validation_sha256") != sha256(export_validation_path):
+        raise SystemExit("export_validation.json checksum does not match metadata.json")
+    export_validation = json.loads(export_validation_path.read_text(encoding="utf-8"))
+    if metadata.get("cam_compatible") is not True:
+        raise SystemExit("Release is not marked CAM-compatible")
+    if export_validation.get("passed") is not True:
+        raise SystemExit("TensorFlow/ONNX export parity did not pass")
+    if export_validation.get("output_contract") != ["logits", "features"]:
+        raise SystemExit("Export output contract is not logits plus features")
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     field_metrics = json.loads(field_metrics_path.read_text(encoding="utf-8"))
     if not metadata.get("calibration", {}).get("fitted"):
@@ -81,8 +94,8 @@ def main() -> None:
         raise SystemExit("Classifier weights do not match the class contract")
 
     session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
-    if len(session.get_outputs()) < 2:
-        raise SystemExit("ONNX model must return logits and a feature map")
+    if len(session.get_outputs()) != 2:
+        raise SystemExit("ONNX model must return exactly logits and a feature map")
     input_name = session.get_inputs()[0].name
     batch = np.zeros((1, int(input_size[0]), int(input_size[1]), 3), dtype=np.float32)
     logits, features, *_ = session.run(None, {input_name: batch})
