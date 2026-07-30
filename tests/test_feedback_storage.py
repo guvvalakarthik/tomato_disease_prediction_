@@ -63,3 +63,8 @@ def test_settings_read_durable_feedback_environment(monkeypatch) -> None:
     settings = Settings.from_env()
     assert settings.feedback_database_url == "postgresql://db.example/tomatoguard"
     assert settings.require_durable_feedback is True
+
+
+def test_vercel_runtime_installs_postgres_driver() -> None:
+    requirements = Path("api/requirements.txt").read_text(encoding="utf-8")
+    assert "psycopg[binary]==3.3.4" in requirements.splitlines()
