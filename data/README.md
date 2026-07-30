@@ -44,16 +44,25 @@ Required consent statement:
 > can request removal before the published dataset version is frozen.
 
 Use anonymous reviewer IDs. Keep the private consent record outside Git; the manifest
-contains only `consent_recorded=true`. Bucket location at a broad region level.
+contains `consent_recorded=true` and only the SHA-256 of the private consent receipt.
+The lock proves that a receipt existed without publishing its contents. Bucket location
+at a broad region level.
 
 Required manifest columns are demonstrated in `field_manifest.example.csv`:
 
 - sample ID, relative path, and immutable image SHA-256;
-- canonical class ID;
-- anonymous expert reviewers, qualification, reviewer count, and adjudication status;
-- consent flag and capture date;
+- canonical class ID and adjudication status;
+- declared reviewer count, which must match the normalized review ledger;
+- consent flag, private consent-receipt SHA-256, and capture date;
 - device family, lighting, background, broad location bucket, and notes.
 - one semantic dataset version shared by every row in the locked manifest.
+
+`field_reviews.example.csv` demonstrates the separate review ledger. It records one
+final row per anonymous reviewer and sample, including qualification, proposed class,
+review outcome, and timestamp. `agreed` samples require two or more unanimous
+independent reviews. `adjudicated` samples require genuine disagreement plus exactly
+one matching `adjudicator_decision`. A self-reported `reviewer_count` without these
+rows is rejected.
 
 Run:
 
@@ -63,11 +72,13 @@ python -m training.tomato_guard_ml.manifest validate-field \
 python -m training.tomato_guard_ml.field_benchmark \
   --manifest data/field_manifest.csv \
   --field-root /private/tomatoguard-field-images \
+  --reviews data/field_reviews.csv \
   --output-summary artifacts/field/field-dataset-summary.json
 ```
 
 The benchmark lock requires at least 300 samples, 20 images per represented class,
-two expert reviews per image, resolved adjudication, and matching image checksums.
+two independently evidenced expert reviews per image, resolved adjudication, consent
+receipt hashes, and matching image checksums. Examples are schemas, not evidence.
 
 ## Label protocol
 
