@@ -4,7 +4,7 @@ import { UploadCloud, ImageIcon, Loader2, RotateCcw } from "lucide-react";
 import PredictionResult from "./PredictionResult.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_FILE_BYTES = 4 * 1024 * 1024;
 const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png"]);
 
 export default function UploadSection() {
@@ -22,7 +22,7 @@ export default function UploadSection() {
       return;
     }
     if (f.size > MAX_FILE_BYTES) {
-      setError("The image must be 10 MB or smaller.");
+      setError("The image must be 4 MB or smaller.");
       return;
     }
     setFile(f);

@@ -35,7 +35,7 @@ sequenceDiagram
   participant API as FastAPI
   participant Runtime as ONNX Runtime
   User->>React: Select JPEG/PNG
-  React->>React: Check MIME and 10 MB limit
+  React->>React: Check MIME and 4 MB limit
   React->>API: POST /v1/predict?explain=true
   API->>API: Limit bytes, verify format, dimensions, decode, RGB, EXIF
   API->>Runtime: 224x224 float32 batch

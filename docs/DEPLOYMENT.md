@@ -12,6 +12,28 @@ docker compose up --build
 Frontend: `http://localhost:3000`; API docs: `http://localhost:8000/docs`.
 The legacy image includes TensorFlow and is intentionally not the final free-tier image.
 
+
+## Vercel portfolio deployment
+
+The Vercel API uses the tracked legacy model exported to ONNX so the serverless
+function stays below Vercel's bundle limit. This is a compatibility deployment,
+not a validated model release:
+
+```bash
+python scripts/export_legacy_onnx.py
+vercel deploy --prod --project tomatoguard-api \
+  -e TOMATOGUARD_MODEL_PATH=model/tomatoes.onnx \
+  -e TOMATOGUARD_ALLOWED_ORIGINS=https://tomatoguard.vercel.app \
+  -e TOMATOGUARD_FEEDBACK_DB_PATH=/tmp/tomatoguard-feedback.sqlite3 \
+  -e TOMATOGUARD_MAX_UPLOAD_BYTES=4000000
+vercel deploy frontend --prod --project tomatoguard \
+  -b VITE_API_URL=https://tomatoguard-api.vercel.app
+```
+
+Vercel Functions limit request and response bodies to 4.5 MB, so this deployment
+uses a 4 MB upload limit. Feedback written under `/tmp` is ephemeral and must not
+be reported as a durable user study. Use the protected Render/Cloudflare workflow
+with persistent storage for an evidence-bearing production release.
 ## Validated ONNX deployment
 
 1. Complete the clean, OOD, field, and artifact gates.

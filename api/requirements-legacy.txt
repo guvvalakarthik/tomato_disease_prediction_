@@ -1,0 +1,4 @@
+-r requirements.txt
+
+# Install only for local compatibility with the original Keras H5 artifact.
+tensorflow==2.20.0

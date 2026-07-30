@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/main.py": {
+      "excludeFiles": "{.git/**,.github/**,.venv/**,data/**,docs/**,edge/**,frontend/**,model/1/**,model/2/**,model/3/**,tests/**,training/**}",
+      "maxDuration": 60
+    }
+  }
+}
