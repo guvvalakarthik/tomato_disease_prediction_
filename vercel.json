@@ -1,5 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/main"
+    }
+  ],
   "functions": {
     "api/main.py": {
       "excludeFiles": "{.git/**,.github/**,.venv/**,data/**,docs/**,edge/**,frontend/**,model/1/**,model/2/**,model/3/**,tests/**,training/**}",
