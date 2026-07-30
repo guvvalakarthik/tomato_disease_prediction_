@@ -27,3 +27,22 @@ python -m training.tomato_guard_ml.evaluate --help
 The dataset itself is not committed. Each run must preserve its manifest hash,
 source revision, seed, configuration, history, model, and reports. Never use the
 clean test or field partitions for model selection.
+
+## Reproducible experiment run
+
+Use a new output directory for every experiment; training refuses to overwrite an
+existing non-empty run. A publishable run must be produced from a clean commit.
+
+```bash
+python -m training.tomato_guard_ml.train \
+  --manifest artifacts/manifests/plantvillage.csv \
+  --dataset-root /data/plantvillage \
+  --config training/config.json \
+  --output artifacts/runs/mobilenetv3-seed42 \
+  --run-name mobilenetv3-seed42
+python -m training.tomato_guard_ml.validate_run \
+  artifacts/runs/mobilenetv3-seed42 \
+  --manifest artifacts/manifests/plantvillage.csv
+```
+
+Each run records the Git revision and dirty state, Python and dependency versions,

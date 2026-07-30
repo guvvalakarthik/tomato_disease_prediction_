@@ -6,6 +6,7 @@ import json
 import os
 import random
 from pathlib import Path
+from time import monotonic
 
 import numpy as np
 import pandas as pd
@@ -15,6 +16,13 @@ from .modeling import (
     build_mobilenet_model,
     compile_model,
     unfreeze_backbone,
+)
+from .provenance import (
+    artifact_hashes,
+    dataset_summary,
+    json_sha256,
+    runtime_provenance,
+    utc_now,
 )
 
 
@@ -85,8 +93,18 @@ def main() -> None:
     parser.add_argument(
         "--architecture", choices=["mobilenetv3", "baseline"], default="mobilenetv3"
     )
+    parser.add_argument(
+        "--run-name",
+        help="Human-readable experiment name stored in run.json (defaults to output name)",
+    )
     args = parser.parse_args()
 
+    if args.output.exists() and any(args.output.iterdir()):
+        raise FileExistsError(
+            f"Refusing to overwrite non-empty run directory: {args.output}"
+        )
+    started_at = utc_now()
+    started_clock = monotonic()
     config = json.loads(args.config.read_text(encoding="utf-8"))
     seed = int(config["seed"])
     set_determinism(seed)
@@ -134,6 +152,7 @@ def main() -> None:
         tf.keras.callbacks.ModelCheckpoint(
             args.output / "best.keras", monitor="val_loss", save_best_only=True
         ),
+        tf.keras.callbacks.CSVLogger(args.output / "epochs.csv"),
     ]
     frozen = model.fit(
         datasets["train"],
@@ -158,13 +177,31 @@ def main() -> None:
     (args.output / "history.json").write_text(
         json.dumps(history, indent=2) + "\n", encoding="utf-8"
     )
+    repo_root = Path(__file__).resolve().parents[2]
     run = {
+        "schema_version": 1,
+        "run_name": args.run_name or args.output.name,
         "architecture": args.architecture,
         "seed": seed,
         "manifest_sha256": manifest_hash(args.manifest),
+        "config_sha256": json_sha256(config),
         "tensorflow_version": tf.__version__,
         "config": config,
+        "dataset": dataset_summary(frame),
+        "runtime": runtime_provenance(repo_root, tf),
+        "arguments": {
+            "manifest": str(args.manifest.resolve()),
+            "dataset_root": str(args.dataset_root.resolve()),
+            "config": str(args.config.resolve()),
+            "output": str(args.output.resolve()),
+        },
+        "started_at": started_at,
+        "completed_at": utc_now(),
+        "duration_seconds": round(monotonic() - started_clock, 3),
         "test_partition_used_for_training": False,
+        "artifacts": artifact_hashes(
+            args.output, ("best.keras", "model.keras", "history.json", "epochs.csv")
+        ),
     }
     (args.output / "run.json").write_text(
         json.dumps(run, indent=2) + "\n", encoding="utf-8"
