@@ -48,18 +48,26 @@ contains only `consent_recorded=true`. Bucket location at a broad region level.
 
 Required manifest columns are demonstrated in `field_manifest.example.csv`:
 
-- sample ID and relative path;
+- sample ID, relative path, and immutable image SHA-256;
 - canonical class ID;
-- anonymous expert reviewer and `confirmed` status;
+- anonymous expert reviewers, qualification, reviewer count, and adjudication status;
 - consent flag and capture date;
 - device family, lighting, background, broad location bucket, and notes.
+- one semantic dataset version shared by every row in the locked manifest.
 
 Run:
 
 ```bash
 python -m training.tomato_guard_ml.manifest validate-field \
   --manifest data/field_manifest.csv
+python -m training.tomato_guard_ml.field_benchmark \
+  --manifest data/field_manifest.csv \
+  --field-root /private/tomatoguard-field-images \
+  --output-summary artifacts/field/field-dataset-summary.json
 ```
+
+The benchmark lock requires at least 300 samples, 20 images per represented class,
+two expert reviews per image, resolved adjudication, and matching image checksums.
 
 ## Label protocol
 
