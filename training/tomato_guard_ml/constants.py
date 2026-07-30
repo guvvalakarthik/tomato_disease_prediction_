@@ -24,4 +24,6 @@ CLASS_LABELS = {
     "tomato_healthy": "Healthy",
 }
 
+CLASS_IDS = tuple(CLASS_LABELS)
+
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}

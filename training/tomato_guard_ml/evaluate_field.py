@@ -5,11 +5,11 @@ import json
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 from sklearn.metrics import f1_score
 
 from .calibration import softmax
 from .evaluate import metrics_for, predict
+from .field_benchmark import validate_field_benchmark
 from .manifest import validate_field_manifest
 from .train import build_dataset
 
@@ -49,11 +49,12 @@ def main() -> None:
 
     import tensorflow as tf
 
-    frame = pd.read_csv(args.manifest)
     class_ids = [entry["id"] for entry in config["classes"]]
-    unknown_labels = set(frame["class_id"]) - set(class_ids)
-    if unknown_labels:
-        raise ValueError(f"Unknown field labels: {sorted(unknown_labels)}")
+    frame, field_summary = validate_field_benchmark(
+        args.manifest,
+        args.field_root,
+        class_ids,
+    )
     represented = sorted(set(frame["class_id"]))
     missing = sorted(set(class_ids) - set(represented))
 
@@ -73,6 +74,7 @@ def main() -> None:
     )
     metrics = metrics_for(probabilities, labels, class_ids)
     metrics["dataset"] = "expert-reviewed local field photographs"
+    metrics["field_dataset"] = field_summary
     metrics["represented_classes"] = represented
     metrics["not_externally_validated_classes"] = missing
     metrics["macro_f1_bootstrap_95_ci"] = bootstrap_macro_f1(

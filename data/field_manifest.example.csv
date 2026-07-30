@@ -1,2 +1,2 @@
-sample_id,relative_path,class_id,expert_reviewer,review_status,consent_recorded,capture_date,device_family,lighting,background,location_bucket,notes
-field-0001,images/field-0001.jpg,tomato_early_blight,reviewer-anonymous-01,confirmed,true,2026-07-01,Android phone,natural shade,field,region-01,Example schema only; not evaluation data
+sample_id,relative_path,sha256,class_id,expert_reviewer,expert_role,reviewer_count,adjudication_status,review_status,consent_recorded,capture_date,device_family,lighting,background,location_bucket,dataset_version,notes
+field-0001,images/field-0001.jpg,0000000000000000000000000000000000000000000000000000000000000000,tomato_early_blight,reviewer-anonymous-01+02,plant_pathologist,2,agreed,confirmed,true,2026-07-01,Android phone,natural shade,field,region-01,1.0.0,Example schema only; replace checksum and do not use as evaluation data
