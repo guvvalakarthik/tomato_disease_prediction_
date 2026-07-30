@@ -21,6 +21,7 @@ class Settings:
     max_upload_bytes: int
     max_image_pixels: int
     log_level: str
+    feedback_db_path: Path = PROJECT_ROOT / "data/feedback.sqlite3"
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -44,4 +45,7 @@ class Settings:
                 os.getenv("TOMATOGUARD_MAX_IMAGE_PIXELS", "25000000")
             ),
             log_level=os.getenv("TOMATOGUARD_LOG_LEVEL", "INFO").upper(),
+            feedback_db_path=_project_path(
+                os.getenv("TOMATOGUARD_FEEDBACK_DB_PATH", "data/feedback.sqlite3")
+            ),
         )

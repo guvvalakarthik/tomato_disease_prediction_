@@ -1,5 +1,6 @@
 import { AlertTriangle, Info, ScanSearch } from "lucide-react";
 import { DISEASES, SEVERITY_STYLES } from "../diseaseCatalog.js";
+import FeedbackPanel from "./FeedbackPanel.jsx";
 
 export default function PredictionResult({ result }) {
   const uncertain = result.status === "uncertain";
@@ -107,6 +108,7 @@ export default function PredictionResult({ result }) {
 
       <p className="mt-5 text-xs text-slate-500 leading-relaxed">{result.disclaimer}</p>
       <p className="mt-1 text-xs text-slate-400">Model {result.model.version}</p>
+      <FeedbackPanel />
     </section>
   );
 }

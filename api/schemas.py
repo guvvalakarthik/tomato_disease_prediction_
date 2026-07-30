@@ -32,6 +32,34 @@ class PredictionResponse(BaseModel):
     disclaimer: str
 
 
+ParticipantRole = Literal["farmer", "agriculture_student", "domain_reviewer", "other"]
+IssueTag = Literal[
+    "upload_difficult",
+    "result_unclear",
+    "confidence_misleading",
+    "uncertainty_unclear",
+    "attention_map_unclear",
+    "accessibility_problem",
+]
+
+
+class FeedbackRequest(BaseModel):
+    consent: Literal[True]
+    participant_role: ParticipantRole
+    task_completed: bool
+    interpretation_without_help: bool
+    uncertainty_understood: bool
+    expert_confirmation_intended: bool
+    usefulness: int = Field(ge=1, le=5)
+    clarity: int = Field(ge=1, le=5)
+    issue_tags: list[IssueTag] = Field(default_factory=list, max_length=6)
+
+
+class FeedbackResponse(BaseModel):
+    status: Literal["recorded"] = "recorded"
+    feedback_id: str
+
+
 class HealthResponse(BaseModel):
     status: Literal["ok", "not_ready"]
     model_version: str | None = None

@@ -23,7 +23,7 @@ Ask each participant to:
 - whether CAM is mistaken for proof;
 - whether the participant would seek expert confirmation;
 - five-point usefulness, clarity, trust, and refusal-understanding ratings;
-- short free-text improvement suggestion.
+- bounded issue tags for upload, result, confidence, uncertainty, attention-map, or accessibility problems.
 
 Success requires at least 80% unassisted end-to-end completion. Do not optimize for
 trust alone; appropriate skepticism and correct uncertainty interpretation matter.
@@ -36,6 +36,17 @@ withdrawal before aggregation.
 
 ## Report template
 
+
+## Collection and aggregate export
+
+The result screen includes an optional consent checkbox and categorical form submitted
+to `POST /v1/feedback`. The API does not store images, filenames, network identifiers,
+contact information, or free text. Keep `TOMATOGUARD_FEEDBACK_DB_PATH` on encrypted,
+access-controlled persistent storage and never commit the SQLite database.
+
+```bash
+python scripts/export_user_study.py --database /private/feedback.sqlite3 \
+  --output reports/generated/user-study.json --minimum-participants 10
 Publish participant mix, dates, tasks, completion rates, rating distributions, major
 misunderstandings, accessibility issues, changes made, and unresolved findings. Keep
 the status `pending` in `RELEASE_GATES.md` until the anonymized report exists.

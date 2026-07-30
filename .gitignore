@@ -9,6 +9,7 @@ __pycache__/
 htmlcov/
 
 # Generated data, reports, and models
+data/feedback*.sqlite3*
 data/raw/
 data/processed/
 artifacts/
