@@ -7,10 +7,8 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
@@ -19,6 +17,7 @@ from sklearn.metrics import (
     f1_score,
     log_loss,
     precision_score,
+    precision_recall_fscore_support,
     recall_score,
     roc_auc_score,
 )
@@ -97,13 +96,80 @@ def metrics_for(
     }
 
 
+
+def classification_bootstrap_intervals(
+    labels: np.ndarray,
+    predictions: np.ndarray,
+    class_ids: list[str],
+    iterations: int = 2000,
+    seed: int = 42,
+) -> dict[str, object]:
+    """Return seeded, class-stratified 95% intervals for headline metrics."""
+    labels = np.asarray(labels, dtype=int)
+    predictions = np.asarray(predictions, dtype=int)
+    if labels.shape != predictions.shape or labels.ndim != 1 or len(labels) == 0:
+        raise ValueError("labels and predictions must be equally sized non-empty vectors")
+    if iterations < 100:
+        raise ValueError("At least 100 bootstrap iterations are required")
+
+    class_indices = [np.flatnonzero(labels == index) for index in range(len(class_ids))]
+    missing = [class_ids[index] for index, values in enumerate(class_indices) if len(values) == 0]
+    if missing:
+        raise ValueError(f"Cannot compute per-class intervals without samples: {missing}")
+
+    rng = np.random.default_rng(seed)
+    macro_f1: list[float] = []
+    class_values = {
+        class_id: {"precision": [], "recall": [], "f1": []}
+        for class_id in class_ids
+    }
+    for _ in range(iterations):
+        selected = np.concatenate(
+            [rng.choice(values, size=len(values), replace=True) for values in class_indices]
+        )
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            labels[selected],
+            predictions[selected],
+            labels=list(range(len(class_ids))),
+            zero_division=0,
+        )
+        macro_f1.append(float(np.mean(f1)))
+        for index, class_id in enumerate(class_ids):
+            class_values[class_id]["precision"].append(float(precision[index]))
+            class_values[class_id]["recall"].append(float(recall[index]))
+            class_values[class_id]["f1"].append(float(f1[index]))
+
+    def interval(values: list[float]) -> dict[str, float]:
+        lower, upper = np.percentile(values, [2.5, 97.5])
+        return {"lower_95": float(lower), "upper_95": float(upper)}
+
+    return {
+        "method": "class_stratified_percentile_bootstrap",
+        "iterations": iterations,
+        "seed": seed,
+        "macro_f1": interval(macro_f1),
+        "per_class": {
+            class_id: {
+                metric: interval(values)
+                for metric, values in metrics.items()
+            }
+            for class_id, metrics in class_values.items()
+        },
+    }
+
+
 def plot_confusion(
     matrix: np.ndarray, class_ids: list[str], output: Path, normalize: bool
 ) -> None:
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
     values = matrix.astype(float)
     if normalize:
         denominator = values.sum(axis=1, keepdims=True)
-        values = np.divide(values, denominator, out=np.zeros_like(values), where=denominator != 0)
+        values = np.divide(
+            values, denominator, out=np.zeros_like(values), where=denominator != 0
+        )
     plt.figure(figsize=(12, 10))
     sns.heatmap(
         values,
@@ -121,7 +187,9 @@ def plot_confusion(
 
 
 def plot_reliability(probabilities: np.ndarray, labels: np.ndarray, output: Path) -> None:
+    import matplotlib.pyplot as plt
     confidence = probabilities.max(axis=1)
+
     correct = probabilities.argmax(axis=1) == labels
     edges = np.linspace(0.0, 1.0, 11)
     centers, accuracies = [], []
@@ -141,8 +209,9 @@ def plot_reliability(probabilities: np.ndarray, labels: np.ndarray, output: Path
     plt.close()
 
 
-
 def plot_risk_coverage(probabilities: np.ndarray, labels: np.ndarray, output: Path) -> None:
+    import matplotlib.pyplot as plt
+
     confidence = probabilities.max(axis=1)
     correct = probabilities.argmax(axis=1) == labels
     order = np.argsort(-confidence)
@@ -166,6 +235,38 @@ def git_commit() -> str:
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
 
+
+EVALUATION_ARTIFACTS = (
+    "metrics.json",
+    "metadata.json",
+    "confusion_matrix.png",
+    "confusion_matrix_normalized.png",
+    "reliability.png",
+    "risk_coverage.png",
+)
+
+
+def write_evidence_manifest(output: Path) -> dict[str, object]:
+    missing = [name for name in EVALUATION_ARTIFACTS if not (output / name).is_file()]
+    if missing:
+        raise ValueError(f"Evaluation evidence is incomplete: {missing}")
+    manifest: dict[str, object] = {
+        "schema_version": 1,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "artifacts": {},
+    }
+    artifacts = manifest["artifacts"]
+    assert isinstance(artifacts, dict)
+    for name in EVALUATION_ARTIFACTS:
+        path = output / name
+        artifacts[name] = {
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "size_bytes": path.stat().st_size,
+        }
+    (output / "evidence_manifest.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
+    return manifest
 def main() -> None:
     parser = argparse.ArgumentParser(description="Calibrate and evaluate TomatoGuard")
     parser.add_argument("--model", type=Path, required=True)
@@ -235,6 +336,12 @@ def main() -> None:
     test_logits, test_labels = predict(model, test)
     test_probabilities = softmax(test_logits, temperature)
     metrics = metrics_for(test_probabilities, test_labels, class_ids)
+    metrics["classification_bootstrap_95_ci"] = classification_bootstrap_intervals(
+        test_labels,
+        test_probabilities.argmax(axis=1),
+        class_ids,
+        seed=int(config["seed"]),
+    )
     metrics["rejection_validation"] = rejection
     test_accepted = test_probabilities.max(axis=1) >= float(
         rejection["confidence_threshold"]
@@ -297,6 +404,7 @@ def main() -> None:
     plot_risk_coverage(
         test_probabilities, test_labels, args.output / "risk_coverage.png"
     )
+    write_evidence_manifest(args.output)
     print(f"Wrote locked-test evaluation to {args.output}")
 
 

@@ -13,6 +13,12 @@ python scripts/generate_results_report.py \
   --output reports/generated/EVIDENCE_REPORT.md
 ```
 
+Locked evaluation also writes `evidence_manifest.json`, which binds both confusion
+matrices, the reliability diagram, risk/coverage plot, metrics, and metadata by SHA-256
+and byte size. `metrics.json` includes a seeded 2,000-iteration class-stratified
+bootstrap 95% interval for macro F1 and every class's precision, recall, and F1. The
+report renders missing intervals as `Pending` rather than inventing bounds.
+
 Missing inputs remain `Pending`. The generator never inserts zero, guessed, notebook,
 or tutorial results. It records SHA-256 for every supplied evidence file.
 

@@ -4,31 +4,13 @@ import argparse
 import json
 from pathlib import Path
 
-import numpy as np
-from sklearn.metrics import f1_score
 
 from .calibration import softmax
-from .evaluate import metrics_for, predict
+from .evaluate import classification_bootstrap_intervals, metrics_for, predict
 from .field_benchmark import validate_field_benchmark
 from .manifest import validate_field_manifest
 from .train import build_dataset
 
-
-def bootstrap_macro_f1(
-    labels: np.ndarray,
-    predictions: np.ndarray,
-    iterations: int = 2000,
-    seed: int = 42,
-) -> dict[str, float]:
-    rng = np.random.default_rng(seed)
-    scores = []
-    for _ in range(iterations):
-        indices = rng.integers(0, len(labels), len(labels))
-        scores.append(
-            f1_score(labels[indices], predictions[indices], average="macro", zero_division=0)
-        )
-    lower, upper = np.percentile(scores, [2.5, 97.5])
-    return {"lower_95": float(lower), "upper_95": float(upper)}
 
 
 def main() -> None:
@@ -79,9 +61,13 @@ def main() -> None:
     metrics["field_dataset"] = field_summary
     metrics["represented_classes"] = represented
     metrics["not_externally_validated_classes"] = missing
-    metrics["macro_f1_bootstrap_95_ci"] = bootstrap_macro_f1(
-        labels, probabilities.argmax(axis=1), seed=int(config["seed"])
+    intervals = classification_bootstrap_intervals(
+        labels,
+        probabilities.argmax(axis=1),
+        class_ids,
+        seed=int(config["seed"]),
     )
+    metrics["classification_bootstrap_95_ci"] = intervals
     threshold = float(metadata["rejection"]["confidence_threshold"])
     accepted = probabilities.max(axis=1) >= threshold
     metrics["acceptance_coverage"] = float(accepted.mean())
