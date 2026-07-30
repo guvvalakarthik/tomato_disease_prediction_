@@ -81,3 +81,34 @@ def test_unpublishable_user_study_remains_pending() -> None:
     )
     assert "| Aggregate user study | Pending |" in report
     assert "Participants: 4" not in report
+
+
+def test_user_impact_comparison_is_rendered_only_when_publishable() -> None:
+    user_study = {
+        "publishable": True,
+        "impact_publishable": True,
+        "participant_count": 20,
+        "task_completion_rate": 0.8,
+        "unassisted_interpretation_rate": 0.75,
+        "uncertainty_understanding_rate": 0.9,
+        "impact_comparison": {
+            "publishable": True,
+            "unit": "consented_response",
+            "baseline_version": "0.1.0-legacy",
+            "candidate_version": "1.0.0",
+            "primary_metric": "task_completed",
+            "candidate_minus_baseline_95_ci": {
+                "task_completed": {
+                    "candidate_minus_baseline": 0.2,
+                    "lower_95": 0.05,
+                    "upper_95": 0.35,
+                }
+            },
+            "demonstrated_improvement": True,
+        },
+    }
+    report = generate_report(None, None, None, None, None, user_study, {})
+    assert "User-study version impact" in report
+    assert "Consented responses: 20" in report
+    assert "Bootstrap 95% CI: +0.0500 to +0.3500" in report
+    assert "Demonstrated improvement: True" in report

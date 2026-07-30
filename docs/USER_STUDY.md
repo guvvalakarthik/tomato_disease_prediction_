@@ -41,12 +41,28 @@ withdrawal before aggregation.
 
 The result screen includes an optional consent checkbox and categorical form submitted
 to `POST /v1/feedback`. The API does not store images, filenames, network identifiers,
-contact information, or free text. Keep `TOMATOGUARD_FEEDBACK_DB_PATH` on encrypted,
-access-controlled persistent storage and never commit the SQLite database.
+contact information, or free text. Use a protected PostgreSQL URL with
+`TOMATOGUARD_REQUIRE_DURABLE_FEEDBACK=true` in production. Keep any local SQLite file
+on encrypted, access-controlled storage and never commit it.
 
 ```bash
-python scripts/export_user_study.py --database /private/feedback.sqlite3 \
-  --output reports/generated/user-study.json --minimum-participants 10
+python scripts/export_user_study.py \
+  --database "$TOMATOGUARD_FEEDBACK_DATABASE_URL" \
+  --output reports/generated/user-study.json \
+  --minimum-participants 20 \
+  --baseline-version 0.1.0-legacy \
+  --candidate-version 1.0.0 \
+  --minimum-per-version 10 \
+  --primary-metric task_completed \
+  --bootstrap-iterations 2000 \
+  --seed 42
+```
+
+Preregister one primary outcome before recruitment. Improvement is reported only when
+its candidate-minus-baseline bootstrap 95% interval is entirely above zero. Counts are
+explicitly consented responses, not unique people, because the privacy-preserving form
+does not store participant identifiers. Publish null or negative findings; do not switch
+the primary metric after seeing results.
 Publish participant mix, dates, tasks, completion rates, rating distributions, major
 misunderstandings, accessibility issues, changes made, and unresolved findings. Keep
 the status `pending` in `RELEASE_GATES.md` until the anonymized report exists.
