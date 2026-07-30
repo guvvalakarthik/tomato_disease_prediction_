@@ -10,9 +10,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN groupadd --system app && useradd --system --gid app --create-home app
-COPY api/requirements.txt /app/api/requirements.txt
+COPY api/requirements.txt api/requirements-legacy.txt /app/api/
 RUN python -m pip install --upgrade pip && \
-    python -m pip install -r /app/api/requirements.txt
+    python -m pip install -r /app/api/requirements-legacy.txt
 
 COPY api /app/api
 COPY model/tomatoes.h5 /app/model/tomatoes.h5

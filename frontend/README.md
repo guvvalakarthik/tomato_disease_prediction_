@@ -14,7 +14,7 @@ Set `VITE_API_URL` at build time; local development defaults to
 
 The client:
 
-- accepts JPEG/PNG files up to 10 MB;
+- accepts JPEG/PNG files up to 4 MB (below Vercel's 4.5 MB body limit);
 - displays `uncertain` as a refusal, never as a diagnosis;
 - shows top-three calibrated probabilities and model version;
 - displays a class-activation map when the release supports it;
