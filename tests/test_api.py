@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import sqlite3
 from pathlib import Path
 
 import numpy as np
@@ -48,6 +49,7 @@ def settings(tmp_path: Path) -> Settings:
         max_upload_bytes=1024,
         max_image_pixels=1_000_000,
         log_level="WARNING",
+        feedback_db_path=tmp_path / "feedback.sqlite3",
     )
 
 
@@ -143,3 +145,47 @@ def test_not_ready_has_503(settings):
         response = client.get("/health/ready")
     assert response.status_code == 503
     assert response.json()["status"] == "not_ready"
+
+
+def test_consent_required_feedback_is_recorded_without_free_text(settings):
+    runtime = DummyRuntime([0.8, 0.1, 0.05, 0.02, 0.01, 0.01, 0.005, 0.003, 0.001, 0.001])
+    payload = {
+        "consent": True,
+        "participant_role": "farmer",
+        "task_completed": True,
+        "interpretation_without_help": True,
+        "uncertainty_understood": True,
+        "expert_confirmation_intended": True,
+        "usefulness": 4,
+        "clarity": 5,
+        "issue_tags": ["attention_map_unclear"],
+    }
+    with TestClient(create_app(settings, runtime)) as client:
+        response = client.post("/v1/feedback", json=payload)
+        assert response.status_code == 201
+        assert response.json()["status"] == "recorded"
+    with sqlite3.connect(settings.feedback_db_path) as connection:
+        row = connection.execute(
+            "SELECT participant_role, model_version, issue_tags FROM feedback"
+        ).fetchone()
+    assert row == ("farmer", "test-1", '["attention_map_unclear"]')
+
+
+def test_feedback_rejects_missing_consent(settings):
+    runtime = DummyRuntime([0.8, 0.1, 0.05, 0.02, 0.01, 0.01, 0.005, 0.003, 0.001, 0.001])
+    with TestClient(create_app(settings, runtime)) as client:
+        response = client.post(
+            "/v1/feedback",
+            json={
+                "consent": False,
+                "participant_role": "other",
+                "task_completed": False,
+                "interpretation_without_help": False,
+                "uncertainty_understood": False,
+                "expert_confirmation_intended": False,
+                "usefulness": 3,
+                "clarity": 3,
+                "issue_tags": [],
+            },
+        )
+    assert response.status_code == 422

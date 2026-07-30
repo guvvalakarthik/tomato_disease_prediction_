@@ -11,11 +11,14 @@ from fastapi.responses import JSONResponse
 
 from .config import Settings
 from .errors import APIError
+from .feedback import FeedbackStore
 from .images import decode_image, read_upload, to_model_array
 from .inference import ModelRuntime
 from .schemas import (
     ClassProbability,
     ErrorBody,
+    FeedbackRequest,
+    FeedbackResponse,
     Explanation,
     HealthResponse,
     ModelIdentity,
@@ -38,6 +41,7 @@ def create_app(
             format="%(asctime)s %(levelname)s %(name)s %(message)s",
         )
         app.state.model_error = None
+        app.state.feedback_store = FeedbackStore(config.feedback_db_path)
         if runtime is not None:
             app.state.runtime = runtime
         else:
@@ -163,6 +167,22 @@ def create_app(
             explanation=explanation,
             disclaimer=loaded.metadata.disclaimer,
         )
+
+
+    @app.post("/v1/feedback", response_model=FeedbackResponse, status_code=201)
+    async def feedback(
+        request: Request,
+        payload: FeedbackRequest,
+    ) -> FeedbackResponse:
+        loaded = getattr(request.app.state, "runtime", None)
+        if loaded is None:
+            raise APIError(503, "model_not_ready", "The model is not ready.")
+        feedback_id = request.app.state.feedback_store.record(
+            payload.model_dump(exclude={"consent"}),
+            loaded.metadata.version,
+        )
+        return FeedbackResponse(feedback_id=feedback_id)
+
 
     return app
 
