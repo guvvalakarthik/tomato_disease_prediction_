@@ -1,0 +1,34 @@
+{
+  "version": "0.1.0-legacy",
+  "artifact_format": "keras-hdf5",
+  "input_size": [128, 128],
+  "input_channels": 3,
+  "preprocessing": "The model contains its own 1/255 rescaling layer.",
+  "classes": [
+    {"id": "tomato_bacterial_spot", "label": "Bacterial Spot"},
+    {"id": "tomato_early_blight", "label": "Early Blight"},
+    {"id": "tomato_late_blight", "label": "Late Blight"},
+    {"id": "tomato_leaf_mold", "label": "Leaf Mold"},
+    {"id": "tomato_septoria_leaf_spot", "label": "Septoria Leaf Spot"},
+    {"id": "tomato_spider_mites", "label": "Spider Mites"},
+    {"id": "tomato_target_spot", "label": "Target Spot"},
+    {"id": "tomato_yellow_leaf_curl_virus", "label": "Yellow Leaf Curl Virus"},
+    {"id": "tomato_mosaic_virus", "label": "Mosaic Virus"},
+    {"id": "tomato_healthy", "label": "Healthy"}
+  ],
+  "calibration": {
+    "fitted": false,
+    "temperature": 1.0
+  },
+  "rejection": {
+    "method": "maximum_softmax_probability",
+    "confidence_threshold": 0.6,
+    "validated": false
+  },
+  "limitations": [
+    "Legacy model trained only on clean PlantVillage-style images.",
+    "No completed field-photo or out-of-distribution validation is available.",
+    "The confidence threshold is provisional until calibration is run."
+  ],
+  "disclaimer": "Educational screening only. A prediction is not a definitive diagnosis; consult a qualified local agricultural expert before treatment."
+}

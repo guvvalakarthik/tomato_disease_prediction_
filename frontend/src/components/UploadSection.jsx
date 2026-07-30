@@ -1,9 +1,11 @@
 import { useCallback, useRef, useState } from "react";
 import axios from "axios";
 import { UploadCloud, ImageIcon, Loader2, RotateCcw } from "lucide-react";
-import ResultCard from "./ResultCard.jsx";
+import PredictionResult from "./PredictionResult.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png"]);
 
 export default function UploadSection() {
   const [file, setFile] = useState(null);
@@ -15,8 +17,12 @@ export default function UploadSection() {
   const inputRef = useRef(null);
 
   const selectFile = useCallback((f) => {
-    if (!f || !f.type.startsWith("image/")) {
-      setError("Please select a valid image file.");
+    if (!f || !ACCEPTED_TYPES.has(f.type)) {
+      setError("Please select a JPEG or PNG image.");
+      return;
+    }
+    if (f.size > MAX_FILE_BYTES) {
+      setError("The image must be 10 MB or smaller.");
       return;
     }
     setFile(f);
@@ -47,12 +53,11 @@ export default function UploadSection() {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await axios.post(`${API_URL}/predict`, formData);
+      const { data } = await axios.post(`${API_URL}/v1/predict?explain=true`, formData, { timeout: 90000 });
       setResult(data);
-    } catch {
-      setError(
-        "Prediction failed. Make sure the backend is running at " + API_URL
-      );
+    } catch (requestError) {
+      const message = requestError.response?.data?.message;
+      setError(message || "The screening service is unavailable. A free-tier cold start can take about one minute; please retry.");
     } finally {
       setLoading(false);
     }
@@ -86,7 +91,7 @@ export default function UploadSection() {
             <input
               ref={inputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png"
               className="hidden"
               onChange={(e) => selectFile(e.target.files[0])}
             />
@@ -141,7 +146,7 @@ export default function UploadSection() {
             )}
           </div>
 
-          {result && <ResultCard result={result} />}
+          {result && <PredictionResult result={result} />}
         </div>
       </div>
     </section>

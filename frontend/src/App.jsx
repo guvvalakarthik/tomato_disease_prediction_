@@ -1,19 +1,19 @@
 import Navbar from "./components/Navbar.jsx";
-import Hero from "./components/Hero.jsx";
+import FieldHero from "./components/FieldHero.jsx";
 import UploadSection from "./components/UploadSection.jsx";
-import DiseaseLibrary from "./components/DiseaseLibrary.jsx";
-import Footer from "./components/Footer.jsx";
+import SafeDiseaseLibrary from "./components/SafeDiseaseLibrary.jsx";
+import SiteFooter from "./components/SiteFooter.jsx";
 
 export default function App() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <Navbar />
       <main>
-        <Hero />
+        <FieldHero />
         <UploadSection />
-        <DiseaseLibrary />
+        <SafeDiseaseLibrary />
       </main>
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }

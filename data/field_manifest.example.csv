@@ -1,0 +1,2 @@
+sample_id,relative_path,class_id,expert_reviewer,review_status,consent_recorded,capture_date,device_family,lighting,background,location_bucket,notes
+field-0001,images/field-0001.jpg,tomato_early_blight,reviewer-anonymous-01,confirmed,true,2026-07-01,Android phone,natural shade,field,region-01,Example schema only; not evaluation data
