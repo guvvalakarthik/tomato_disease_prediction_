@@ -97,6 +97,7 @@ def main() -> None:
         "--run-name",
         help="Human-readable experiment name stored in run.json (defaults to output name)",
     )
+    parser.add_argument("--seed", type=int, help="Override config seed for this run")
     args = parser.parse_args()
 
     if args.output.exists() and any(args.output.iterdir()):
@@ -106,6 +107,8 @@ def main() -> None:
     started_at = utc_now()
     started_clock = monotonic()
     config = json.loads(args.config.read_text(encoding="utf-8"))
+    if args.seed is not None:
+        config["seed"] = args.seed
     seed = int(config["seed"])
     set_determinism(seed)
     import tensorflow as tf

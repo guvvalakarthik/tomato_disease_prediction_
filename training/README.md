@@ -46,3 +46,23 @@ python -m training.tomato_guard_ml.validate_run \
 ```
 
 Each run records the Git revision and dirty state, Python and dependency versions,
+dataset/config hashes, timing, seed, and artifact hashes.
+
+## Release 1.0 experiment matrix
+
+A release candidate must be selected using validation loss across at least three
+MobileNetV3 seeds. The baseline is trained on the same manifest for comparison but
+cannot win release selection merely through clean-test performance.
+
+```bash
+python scripts/run_training_matrix.py \
+  --manifest artifacts/manifests/plantvillage.csv \
+  --dataset-root /data/plantvillage \
+  --config training/config.json \
+  --output artifacts/runs/release-1 \
+  --seeds 17 42 73
+```
+
+The script refuses mixed manifests, fewer than three seeds, reused output folders,
+or runs that cannot prove the test partition remained locked. Actual training is
+pending until the external dataset is supplied; no model or metric is fabricated.
