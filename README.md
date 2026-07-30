@@ -21,6 +21,8 @@ serves the explicitly unvalidated `0.1.0-legacy` compatibility model.
 - Clean test, OOD test, and expert-reviewed local field evidence are separated.
 - Temperature scaling and a locked rejection threshold replace raw softmax claims.
 - Low-confidence uploads return `uncertain`, not a forced diagnosis.
+- Obvious unusable inputs (flat/synthetic, blank, extreme exposure, or monochrome)
+  are rejected before inference; semantic OOD performance remains a locked test gate.
 - The API validates content bytes, dimensions, type, size, and decode safety.
 - Versioned artifacts bind preprocessing, class order, metrics, thresholds, and hashes.
 - ONNX inference and a linear CAM-compatible head support low-cost CPU deployment.

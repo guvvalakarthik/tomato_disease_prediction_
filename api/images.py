@@ -11,6 +11,45 @@ from .errors import APIError
 
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png"}
 ALLOWED_FORMATS = {"JPEG", "PNG"}
+QUALITY_SAMPLE_SIZE = (128, 128)
+
+
+def pre_model_rejection_reason(image: Image.Image) -> str | None:
+    """Reject obviously unusable inputs before a classifier can be overconfident."""
+    sample = ImageOps.fit(
+        image.convert("RGB"),
+        QUALITY_SAMPLE_SIZE,
+        method=Image.Resampling.BILINEAR,
+    )
+    pixels = np.asarray(sample, dtype=np.float32)
+    luminance = (
+        0.2126 * pixels[..., 0]
+        + 0.7152 * pixels[..., 1]
+        + 0.0722 * pixels[..., 2]
+    )
+    mean_luminance = float(luminance.mean())
+    if mean_luminance < 8.0:
+        return "The image is too dark to evaluate. Retake it in natural, even light."
+    if mean_luminance > 247.0:
+        return "The image is too bright to evaluate. Avoid glare and retake the photo."
+
+    low, high = np.percentile(luminance, [1.0, 99.0])
+    horizontal = np.abs(np.diff(luminance, axis=1)).mean()
+    vertical = np.abs(np.diff(luminance, axis=0)).mean()
+    mean_gradient = float((horizontal + vertical) / 2.0)
+    if float(high - low) < 12.0 or mean_gradient < 1.0:
+        return (
+            "The image has too little visual detail and may be synthetic, blank, or "
+            "out of focus. Upload a sharp photograph of one tomato leaf."
+        )
+
+    channel_spread = float((pixels.max(axis=2) - pixels.min(axis=2)).mean())
+    if channel_spread < 2.0:
+        return (
+            "The image does not contain enough color information. Upload an unfiltered "
+            "color photograph of a tomato leaf."
+        )
+    return None
 
 
 async def read_upload(file: UploadFile, max_bytes: int) -> bytes:

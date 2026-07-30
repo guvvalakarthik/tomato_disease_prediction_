@@ -12,7 +12,12 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from .config import Settings
 from .errors import APIError
 from .feedback import FeedbackStore
-from .images import decode_image, read_upload, to_model_array
+from .images import (
+    decode_image,
+    pre_model_rejection_reason,
+    read_upload,
+    to_model_array,
+)
 from .inference import ModelRuntime
 from .metrics import MetricsRegistry
 from .schemas import (
@@ -147,6 +152,21 @@ def create_app(
 
         payload = await read_upload(file, config.max_upload_bytes)
         image = decode_image(payload, config.max_image_pixels)
+        input_rejection = pre_model_rejection_reason(image)
+        if input_rejection:
+            request.app.state.metrics.observe_prediction("uncertain", "input_quality")
+            return PredictionResponse(
+                request_id=request.state.request_id,
+                status="uncertain",
+                model=ModelIdentity(
+                    version=loaded.metadata.version, sha256=loaded.sha256
+                ),
+                prediction=None,
+                top_predictions=[],
+                uncertainty_reason=input_rejection,
+                explanation=None,
+                disclaimer=loaded.metadata.disclaimer,
+            )
         batch = to_model_array(image, loaded.metadata.input_size)
         probabilities, heatmap = loaded.predict(batch, include_explanation=explain)
 
