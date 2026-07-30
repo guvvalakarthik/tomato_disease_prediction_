@@ -35,6 +35,14 @@ def test_comparable_results_and_evidence_hashes_are_published() -> None:
         "per_class": {
             "tomato_healthy": {"precision": 0.95, "recall": 0.96, "f1": 0.955}
         },
+        "classification_bootstrap_95_ci": {
+            "macro_f1": {"lower_95": 0.89, "upper_95": 0.93},
+            "per_class": {
+                "tomato_healthy": {
+                    "f1": {"lower_95": 0.92, "upper_95": 0.98}
+                }
+            },
+        },
     }
     comparison = {
         "comparable": True,
@@ -54,6 +62,8 @@ def test_comparable_results_and_evidence_hashes_are_published() -> None:
     )
     assert "Macro F1: 91.00%" in report
     assert "Baseline macro_f1: 84.00%" in report
+    assert "89.00% to 93.00%" in report
+    assert "92.00% to 98.00%" in report
     assert "Candidate macro_f1: 91.00%" in report
     assert "locked-clean-v1" in report
     assert "`clean_metrics`: `" + "b" * 64 + "`" in report

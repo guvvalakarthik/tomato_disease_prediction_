@@ -22,6 +22,12 @@ def _percent(value: Any) -> str:
     return f"{float(value) * 100:.2f}%"
 
 
+def _interval(values: dict[str, Any] | None) -> str:
+    if not values:
+        return "Pending"
+    return f"{_percent(values['lower_95'])} to {_percent(values['upper_95'])}"
+
+
 def generate_report(
     metadata: dict[str, Any] | None,
     clean: dict[str, Any] | None,
@@ -69,23 +75,29 @@ def generate_report(
             ]
         )
     if clean:
+        intervals = clean.get("classification_bootstrap_95_ci", {})
         sections.extend(
             [
                 "",
                 "## Locked clean and OOD results",
                 "",
                 f"- Macro F1: {_percent(clean['macro_f1'])}",
+                f"- Macro F1 stratified bootstrap 95% CI: {_interval(intervals.get('macro_f1'))}",
                 f"- ECE (15 bins): {_percent(clean['ece_15_bin'])}",
                 f"- Accepted coverage: {_percent(clean['selective']['acceptance_coverage'])}",
                 f"- Locked OOD false acceptance: {_percent(clean['ood_test']['false_acceptance_rate'])}",
                 "",
-                "| Class | Precision | Recall | F1 |",
-                "| --- | ---: | ---: | ---: |",
+                "| Class | Precision | Recall | F1 | F1 95% CI |",
+                "| --- | ---: | ---: | ---: | ---: |",
             ]
         )
         for class_id, values in sorted(clean.get("per_class", {}).items()):
+            class_interval = (
+                intervals.get("per_class", {}).get(class_id, {}).get("f1")
+            )
             sections.append(
-                f"| `{class_id}` | {_percent(values['precision'])} | {_percent(values['recall'])} | {_percent(values['f1'])} |"
+                f"| `{class_id}` | {_percent(values['precision'])} | "
+                f"{_percent(values['recall'])} | {_percent(values['f1'])} | {_interval(class_interval)} |"
             )
     if field:
         interval = field.get("macro_f1_bootstrap_95_ci", {})
