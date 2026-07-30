@@ -56,6 +56,7 @@ def generate_report(
         "Comparable before/after evaluation": comparison if comparison and comparison.get("comparable") is True else None,
         "CPU latency benchmark": latency,
         "Aggregate user study": user_study if user_study and user_study.get("publishable") is True else None,
+        "User-study impact comparison": user_study if user_study and user_study.get("impact_publishable") is True else None,
     }
     sections.extend(
         f"| {name} | {'Present' if value is not None else 'Pending'} |"
@@ -147,10 +148,28 @@ def generate_report(
                 "",
                 "## Aggregate user study",
                 "",
-                f"- Participants: {int(user_study['participant_count'])}",
+                f"- Consented responses: {int(user_study['participant_count'])}",
                 f"- Task completion: {_percent(user_study['task_completion_rate'])}",
                 f"- Unassisted interpretation: {_percent(user_study['unassisted_interpretation_rate'])}",
                 f"- Uncertainty understanding: {_percent(user_study['uncertainty_understanding_rate'])}",
+            ]
+        )
+    impact = user_study.get("impact_comparison") if user_study else None
+    if impact and impact.get("publishable") is True:
+        primary_metric = impact["primary_metric"]
+        primary_interval = impact["candidate_minus_baseline_95_ci"][primary_metric]
+        sections.extend(
+            [
+                "",
+                "## User-study version impact",
+                "",
+                f"- Unit: {impact['unit']}",
+                f"- Baseline: `{impact['baseline_version']}`",
+                f"- Candidate: `{impact['candidate_version']}`",
+                f"- Preregistered primary metric: `{primary_metric}`",
+                f"- Candidate minus baseline: {float(primary_interval['candidate_minus_baseline']):+.4f}",
+                f"- Bootstrap 95% CI: {float(primary_interval['lower_95']):+.4f} to {float(primary_interval['upper_95']):+.4f}",
+                f"- Demonstrated improvement: {impact['demonstrated_improvement']}",
             ]
         )
     sections.extend(["", "## Evidence file hashes", ""])
